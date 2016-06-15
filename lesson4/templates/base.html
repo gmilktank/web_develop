@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <link type="text/css" rel="stylesheet" href="/static/blog.css" />
+
+  <title>枫林小屋</title>
+</head>
+
+<body>
+    <header class="top">
+      <img id="headerLogo"
+           src="/images/headerLogo.gif" alt="Milktank Blog">
+      <img id="headerSlogan"
+          src="/images/headerSlogan.gif" alt="Providing all the best IT information you need to power your life.">
+    </header>
+
+
+    <nav>
+	<ul>
+		<li><a href="/login">HOME</a></li>
+		<li class="selected"><a href="/blog">BLOG</a></li>
+		<li><a href="/blog/newpost">NewPost</a></li>
+		<li><a href="/signup">RECIPES</a></li>
+		<li><a href="">LOCATIONS</a></li>
+	</ul>
+	</nav>
+
+
+      <aside>
+            <p class="beanheading">
+              <img src="images/bag.gif" alt="Bean Machine bag">
+              <br>
+              ORDER ONLINE
+              with the
+              <a href="form.html">BEAN MACHINE</a>
+              <br>
+              <span class="slogan">
+                  FAST <br>
+                  FRESH <br>
+                  TO YOUR DOOR <br>
+              </span>
+            </p>
+            <p>
+              Why wait?  You can order all our fine coffees right from the Internet with our new,
+              automated Bean Machine.  How does it work?  Just click on the Bean Machine link,
+              enter your order, and behind the scenes, your coffee is roasted, ground
+              (if you want), packaged, and shipped to your door.
+             </p>
+      </aside>
+
+
+
+      <section id="main">
+          <article>
+        {% block content %}
+        {% endblock %}
+          </article>
+	  </section>
+
+
+
+
+
+
+
+
+    <footer>
+      &copy; 2016, Milktank Blog
+      <br>
+      All trademarks and registered trademarks appearing on
+      this site are the property of their respective owners.
+    </footer>
+</body>
+
+</html>

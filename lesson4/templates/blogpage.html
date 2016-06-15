@@ -1,0 +1,11 @@
+<article>
+    <header>
+      <h1>
+        {{p.title}}
+      </h1>
+      <time>
+        {{p.created.strftime("%b %d,%Y")}}
+      </time>
+    </header>
+    <p>{{p._render_text | safe}}</p>
+  </article>

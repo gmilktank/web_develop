@@ -1,0 +1,10 @@
+name: helloworld
+version: 1
+
+handlers:
+- url: /static
+  static_path: static
+
+libraries:
+- name: jinja2
+  version: "2.6"

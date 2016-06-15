@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %} 注册 {% endblock %}
+
+
+{% block content %}
+
+
+    <!--<h2>Register </h2>-->
+    <!--<form method="post">-->
+        <!--<div>-->
+            <!--<form method="post">-->
+                <!--<label>-->
+                <!--User Name:-->
+                <!--<input name="username" value="{{username}}"> <div style="color: red">{{error1}}</div>-->
+                <!--</label><br>-->
+                <!--<label>-->
+                <!--Password:-->
+                <!--<input name="password" type="password"> <div style="color: red">{{error2}}</div>-->
+                <!--</label><br>-->
+                <!--<label>-->
+                <!--Verify Password:-->
+                <!--<input name="verify" type="password"><div style="color: red">{{error3}}</div>-->
+                <!--</label><br>-->
+                <!--<label>-->
+                <!--E-mail:-->
+                <!--<input name="email" value="{{email}}"><div style="color: red">{{error4}}</div>-->
+                <!--</label><br>-->
+                <!--<br>-->
+                <!--<br>-->
+                <!--<input type="submit">-->
+
+            <!--</form>-->
+        <!--</div>-->
+    <!--</form>-->
+    <!--<div class="error">{{error}}</div>-->
+
+
+<div class="uk-width-2-3">
+    <h1>欢迎注册！</h1>
+    <form id="form-register" method="post" class="uk-form uk-form-stacked" >
+        <div class="uk-alert uk-alert-danger uk-hidden"></div>
+        <div class="uk-form-row">
+            <label class="uk-form-label">名字:</label>
+            <div class="uk-form-controls">
+                <input name="username" value="{{username}}" type="text" class="uk-width-1-1">
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <label class="uk-form-label">电子邮件:</label>
+            <div class="uk-form-controls">
+                <input name="email" value="{{email}}" type="text" class="uk-width-1-1">
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <label class="uk-form-label">输入口令:</label>
+            <div class="uk-form-controls">
+                <input id="password" name="password" type="password" class="uk-width-1-1">
+                <!--<input id="password" name="password" type="hidden">-->
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <label class="uk-form-label">重复口令:</label>
+            <div class="uk-form-controls">
+                <input name="verify" type="password" maxlength="50" placeholder="重复口令" class="uk-width-1-1">
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <button type="submit" class="uk-button uk-button-primary"><i class="uk-icon-user"></i> 注册</button>
+        </div>
+        <div class="error">{{error}}</div>
+    </form>
+</div>
+
+{% endblock %}
+
+
