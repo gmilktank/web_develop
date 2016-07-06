@@ -5,6 +5,10 @@ handlers:
 - url: /static
   static_path: static
 
+- url: /images
+  static_path: images
+
+
 libraries:
 - name: jinja2
   version: "2.6"

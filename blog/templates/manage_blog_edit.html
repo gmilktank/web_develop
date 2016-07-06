@@ -1,14 +1,15 @@
 {% extends 'base.html' %}
 
-
 {% block title %}编辑日志{% endblock %}
 
 {% block beforehead %}
 
 <script>
+
 var
     action = '{{ action }}',
     redirect = '{{ redirect }}';
+
 function initVue(blog) {
     var vm = new Vue({
         el: '#form-blog',
@@ -17,6 +18,7 @@ function initVue(blog) {
             submit: function (event) {
                 event.preventDefault();
                 startLoading();
+                <!--alert("123");-->
                 postApi(action, this.$data, function (err, r) {
                     if (err) {
                         showError(err);
@@ -33,10 +35,12 @@ function initVue(blog) {
         }
     });
 }
+
 // {% if id %}
+
 $(function () {
     startLoading();
-    getApi('/api/blogs/{{ id }}', function (err, blog) {
+    getApi('/api/blog/{{ id }}', function (err, blog) {
         if (err) {
             showError(err);
         }
@@ -46,7 +50,9 @@ $(function () {
         }
     });
 });
+
 // {% else %}
+
 $(function () {
     initVue({
         name: '',
@@ -54,7 +60,9 @@ $(function () {
         content: ''
     });
 });
+
 // {% endif %}
+
 </script>
 
 {% endblock %}
@@ -72,31 +80,31 @@ $(function () {
     </div>
 
     <div class="uk-width-2-3">
-        <form id="form-blog" v-on="submit: submit" class="uk-form uk-form-stacked" method="post">
+        <!--<form id="form-blog" v-on="submit: submit" class="uk-form uk-form-stacked" method="post">-->
+        <form id="form-blog" v-on:submit="submit"  class="uk-form uk-form-stacked" method="post">
             <div class="uk-alert uk-alert-danger uk-hidden"></div>
             <div class="uk-form-row">
                 <label class="uk-form-label">标题:</label>
                 <div class="uk-form-controls">
-                    <input v-model="name" name="name" type="text" placeholder="标题" class="uk-width-1-1">
+                    <input v-model="blog.name" name="blog.name" type="text" placeholder="标题" class="uk-width-1-1">
                 </div>
             </div>
             <div class="uk-form-row">
                 <label class="uk-form-label">摘要:</label>
                 <div class="uk-form-controls">
-                    <textarea v-model="summary" rows="4" name="summary" placeholder="摘要" class="uk-width-1-1" style="resize:none;"></textarea>
+                    <textarea v-model="blog.summary" rows="4" name="blog.summary" placeholder="摘要" class="uk-width-1-1" style="resize:none;"></textarea>
                 </div>
             </div>
             <div class="uk-form-row">
                 <label class="uk-form-label">内容:</label>
                 <div class="uk-form-controls">
-                    <textarea v-model="content" rows="16" name="content" placeholder="内容" class="uk-width-1-1" style="resize:none;"></textarea>
+                    <textarea v-model="blog.content" rows="16" name="blog.content" placeholder="内容" class="uk-width-1-1" style="resize:none;"></textarea>
                 </div>
             </div>
             <div class="uk-form-row">
                 <button type="submit" class="uk-button uk-button-primary"><i class="uk-icon-save"></i> 保存</button>
-                <button v-on="click: cancel()" type="button" class="uk-button"><i class="uk-icon-times"></i> 取消</button>
+                <button v-on:click="cancel()" type="button" class="uk-button"><i class="uk-icon-times"></i> 取消</button>
             </div>
-            {{error}}
         </form>
     </div>
 

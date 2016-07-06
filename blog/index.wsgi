@@ -11,6 +11,8 @@ import jinja2
 import sae.kvdb
 kv = sae.kvdb.Client()
 import datetime
+from tools import *
+from models import *
 
 def escape_html(s):
     return cgi.escape(s,quote="True")
@@ -23,18 +25,6 @@ jinja2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),aut
 
 
 
-def datetime_filter(t):
-    delta = int(time.time() - t)
-    if delta < 60:
-        return u'1分钟前'
-    if delta < 3600:
-        return u'%s分钟前' % (delta // 60)
-    if delta < 86400:
-        return u'%s小时前' % (delta // 3600)
-    if delta < 604800:
-        return u'%s天前' % (delta // 86400)
-    dt = datetime.fromtimestamp(t)
-    return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
 
 
@@ -48,134 +38,6 @@ def render_str(template, **params):
 
 
 
-import time, uuid
-from transwarp.db import next_id
-from transwarp.orm import Model, StringField, BooleanField, FloatField, TextField
-
-
-
-class User(Model):
-    __table__ = 'users'
-
-    id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
-    email = StringField(updatable=False, ddl='varchar(50)',nullable=True)
-    password = StringField(ddl='varchar(50)')
-    admin = BooleanField()
-    name = StringField(ddl='varchar(50)')
-    image = StringField(ddl='varchar(500)')
-    created_at = FloatField(updatable=False, default=time.time)
-
-    @classmethod
-    def by_id(cls,uid):
-        return User.get(uid)
-
-    @classmethod
-    def by_name(cls,name):
-        #u=User.all().filter('username=',name).get()
-        u=User.find_by("where name=?",name)
-        #u=db.GqlQuery("select * from User where username='%s'"%name)
-        if u:
-            return u[0]
-
-    @classmethod
-    def register(cls,name,pw,email=None):
-        pw_hash=make_pw_hash(name,pw)
-        return User(name=name,password=pw_hash,email=email)  #only create it not store it!
-
-    @classmethod
-    def login(cls,name,pw):
-        u=cls.by_name(name)
-        if u and valid_pw(name,pw,u.password):
-            return u
-
-
-
-class Blog(Model):
-    __table__ = 'blogs'
-
-    id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
-    user_id = StringField(updatable=False, ddl='varchar(50)')
-    user_name = StringField(ddl='varchar(50)')
-    user_image = StringField(ddl='varchar(500)')
-    name = StringField(ddl='varchar(50)')
-    summary = StringField(ddl='varchar(200)')
-    content = TextField()
-    created_at = FloatField(updatable=False, default=time.time)
-
-
-    def render(self):
-        self._render_text=self.content.replace('\n','<br>') #without this replace .all the outcome will in one line.
-        return render_str("blogpage.html",p=self)
-
-
-    def render_json(self):
-        blog={"title":self.name,"content":self.content,"user_id":str(self.user_id),"summary":self.summary,"created_at":str(self.created_at)  }
-        # blog={"title":self.title,"content":self.content,"created":self.created,"email":self.email,"last_modified":self.last_modified}
-        return json.dumps(blog)
-
-class Comment(Model):
-    __table__ = 'comments'
-
-    id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
-    blog_id = StringField(updatable=False, ddl='varchar(50)')
-    user_id = StringField(updatable=False, ddl='varchar(50)')
-    user_name = StringField(ddl='varchar(50)')
-    user_image = StringField(ddl='varchar(500)')
-    content = TextField()
-    created_at = FloatField(updatable=False, default=time.time)
-
-
-
-'''
-class Blog(db.Model):
-    title=db.StringProperty(required=True)
-    content=db.TextProperty(required=True)
-    created=db.DateTimeProperty(auto_now_add=True)
-    email=db.StringProperty()
-    last_modified=db.DateTimeProperty(auto_now=True)
-
-    def render(self):
-        self._render_text=self.content.replace('\n','<br>') #without this replace .all the outcome will in one line.
-
-        return render_str("blogpage.html",p=self)
-
-
-    def render_json(self):
-        blog={"title":self.title,"content":self.content,"created":str(self.created),"email":self.email,"last_modified":str(self.last_modified)  }
-        # blog={"title":self.title,"content":self.content,"created":self.created,"email":self.email,"last_modified":self.last_modified}
-        return json.dumps(blog)
-
-
-
-
-class User(db.Model):
-    username=db.StringProperty(required=True)
-    password=db.StringProperty(required=True)
-    last_signin=db.DateTimeProperty(auto_now=True)
-
-    @classmethod
-    def by_id(cls,uid):
-        return User.get_by_id(uid)
-
-    @classmethod
-    def by_name(cls,name):
-        #u=User.all().filter('username=',name).get()
-        u=db.GqlQuery("select * from User where username='%s'"%name)
-        if u:
-            return u[0]
-
-    @classmethod
-    def register(cls,name,pw,email=None):
-        pw_hash=make_pw_hash(name,pw)
-        return User(username=name,password=pw_hash,email=email)  #only create it not store it!
-
-    @classmethod
-    def login(cls,name,pw):
-        u=cls.by_name(name)
-        if u and valid_pw(name,pw,u.password):
-            return u
-
-'''
 from transwarp import db
 db.create_engine('root', '123456', 'awesome')
 
@@ -186,6 +48,7 @@ class Handler(webapp2.RequestHandler):
 
     def render_str(self,template,**params):
         t=jinja2_env.get_template(template)
+        params.setdefault("user",self.user)
         return t.render(params)
 
     def render(self,template,**kw):
@@ -214,7 +77,7 @@ class Handler(webapp2.RequestHandler):
     def initialize(self,*a,**kw):
         webapp2.RequestHandler.initialize(self,*a,**kw)
         uid =self.read_secure_cooke('user_id')
-        #self.user= uid and User.by_id(int(uid))
+        self.user= uid and User.by_id((uid))
 
 class MainPage(Handler):
     def write_form(self,error=""):
@@ -223,8 +86,9 @@ class MainPage(Handler):
     def get(self):
         #blogs=db.GqlQuery("select * from Blog order by created DESC")
         blogs=Blog.find_all()
+        blogs.reverse()
 
-        self.render("bloglist.html",blogs=blogs)
+        self.render("bloglist.html",blogs=blogs,user=self.user)
 
     def post(self):
         self.response.write("Thanks")
@@ -232,13 +96,16 @@ class MainPage(Handler):
 
 class Add_blog(Handler):
     def post(self):
-        title=self.request.get("title")
+        name=self.request.get("name")
+        summary=self.request.get("summary")
         content=self.request.get("content")
-        if title=="" or content=="":
+        if name=="" or content=="":
             error="Subject and content,Please"
             self.render("add_blog.html",error=error)
         else:
-            a=Blog(name=title,content=content)
+            a=Blog(name=name,
+                   summary=summary,
+                   content=content)
             a.insert()
 
             self.redirect('/blog/%s' %str(a.id))
@@ -255,65 +122,11 @@ class BlogPage(Handler):
         if not blog:
             self.error(404)
             return
-        self.render("perment_link.html",blog=blog[0])
+        comments = Comment.find_by('where blog_id=? order by created_at desc limit 1000', blog_id)
+        self.render("blogpage.html",p=blog[0],comments=comments)
 
 
 
-
-def valid_username(username):
-    USER_RE=re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
-    return USER_RE.match(username)
-
-def valid_password(password):
-    PASSWORD_RE=re.compile(r".{3,20}$")
-    return PASSWORD_RE.match(password)
-
-def valid_email(email):
-    # EMAIL_RE=re.compile(r"^[\S]+@[\S]+.[\S]+$]")
-    EMAIL_RE=re.compile(r"^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$")
-
-    return EMAIL_RE.match(email)
-
-
-import hmac
-import random
-SECRET = 'imsosecret'
-
-
-import string
-import hashlib
-
-
-
-def make_salt():
-    return ''.join(random.choice(string.letters) for x in xrange(5))
-
-# Implement the function valid_pw() that returns True if a user's password
-# matches its hash. You will need to modify make_pw_hash.
-
-def make_pw_hash(name, pw,salt=None):
-    if not salt:
-        salt = make_salt()
-    h = hashlib.sha256(name + pw + salt).hexdigest()
-    return '%s,%s' % (h, salt)
-
-def valid_pw(name, pw, h):
-    ###Your code here
-    hash_value,salt=h.split(',')
-    return h == make_pw_hash(name,pw,salt)
-
-
-def hash_str(s):
-    ###Your code here
-    return hmac.new(SECRET,s).hexdigest()
-
-def make_secure_val(s):
-    return "%s|%s" % (s, hash_str(s))
-
-def check_secure_val(h):
-    val = h.split('|')[0]
-    if h == make_secure_val(val):
-        return val
 
 
 class Signup_handler(Handler):
@@ -327,7 +140,7 @@ class Signup_handler(Handler):
         password=self.request.get("password")
         verify=self.request.get("verify")
         email=self.request.get("email")
-
+        error5=""
         if not(valid_username(username)):
             error1="Not a valid Name!"
         if not (valid_password(password)):
@@ -368,22 +181,36 @@ class Welcome_handler(Handler):
 
 
 class Login_handler(Handler):
+
+
     def get(self):
         self.render("login.html")
+
+
     def post(self):
         error1=error2=""
-        username=self.request.get("username")
+        name=self.request.get("name").strip().lower()
         password=self.request.get("password")
-        u=User.login(username,password)
-        if u:
-            self.login(u)
-            self.redirect("/welcome")
+        user=User.login(name,password)
+        if user is None:
+            raise APIError('auth:failed', 'name', 'Invalid name.')
+        elif not valid_pw(name, password, user.password):
+            raise APIError('auth:failed', 'password', 'Invalid password.')
+
+        if user:
+            self.login(user)
+            self.redirect("/")
         else:
-            self.render("login.html",error="Password Error:"+username+password)
+            # self.render("login.html",error="Password Error:"+email+password)
+            user.password = '******'
+            self.write(get_json(dict(user=user)))
 
 class Logout_handler(Handler):
     def get(self):
         self.logout()
+        # logging.warn(self.request.url)
+        self.redirect("/")
+
 
 class blog_json_handler(Handler):
 
@@ -411,17 +238,187 @@ class hello_world_handler(Handler):
     def get(self):
         self.render("hello.html")
 
+
+class Manage_blogList_handler(Handler):
+    def get(self):
+        # logging.warn("test")
+        return self.render("manage_bloglist.html",page_index=1)
+
+from apis import *
+import logging
+
+@api
+def get_json(kw):
+    return kw
+
+
+
+class api_get_blogs(Handler):
+    @api
+    def get_json(self,kw):
+        return (kw)
+
+    def get(self):
+        format = self.request.get('format', '')
+        index = self.request.get('page','1')
+        # logging.warn("test")
+        blogs, page = get_blog_by_page(int(index))
+        # if format=='html':
+        #     for blog in blogs:
+        #         blog.content = markdown2.markdown(blog.content)
+        # return dict(blogs=blogs, page=page)
+        return self.write(self.get_json(dict(blogs=blogs, page=page)))
+
+
+class api_blog_delete(Handler):
+
+    def post(self,blog_id):
+        blog=Blog.get(blog_id)
+        if blog is  None:
+            raise APIResourceNotFoundError('Blog')
+        blog.delete()
+        return self.write(get_json(dict(id=blog_id)))
+
+
+class api_blog(Handler):
+
+    def get(self,blog_id):
+        blog=Blog.get(blog_id)
+        if blog is  None:
+            raise APIResourceNotFoundError('Blog')
+        return self.write(get_json(dict(blog=blog)))
+
+    def post(self,blog_id):
+        # logging.warn(self.request)
+        # blog=self.request.get("blog")
+        name=self.request.get("blog[name]")
+        summary=self.request.get("blog[summary]")
+        content=self.request.get("blog[content]")
+        # logging.warn("blog:"+blog+"name:"+name+" summary:"+summary)
+        if not name:
+            raise APIValueError('name', 'name cannot be empty.')
+        if not summary:
+            raise APIValueError('summary', 'summary cannot be empty.')
+        if not content:
+            raise APIValueError('content', 'content cannot be empty.')
+        blog = Blog.get(blog_id)
+        if blog is None:
+            raise APIResourceNotFoundError('Blog')
+        blog.name = name
+        blog.summary = summary
+        blog.content = content
+        blog.update()
+        return self.write(get_json(dict(blog=blog)))
+
+
+class manage_blogs_edit_handler(Handler):
+
+    def get(self,blog_id):
+        logging.warn("api_blog_edit")
+        blog = Blog.get(blog_id)
+        if blog is None:
+            raise APIResourceNotFoundError('Blog')
+        return self.render("manage_blog_edit.html",id=blog.id, name=blog.name, summary=blog.summary, content=blog.content, action='/api/blog/%s' % blog_id, redirect='/manage/blogs', user="")
+
+
+#
+# def _get_page_index():
+#     page_index = 1
+#     try:
+#         page_index = int(ctx.request.get('page', '1'))
+#     except ValueError:
+#         pass
+#     return page_index
+
+class Manage_UserList_handler(Handler):
+    def get(self):
+        return self.render("manage_user_list.html")
+
+class api_get_users(Handler):
+    def get(self):
+        total = User.count_all()
+        page_index=self.request.get("page",'1')
+        if page_index=="":
+            page_index=1
+        else:
+            page_index=int(page_index)
+        page = Page(total,page_index)
+        users = User.find_by('order by created_at desc limit ?,?', page.offset, page.limit)
+        for u in users:
+            u.password = '******'
+        return self.write(get_json(dict(users=users, page=page)))
+
+class Manage_CommentList_handler(Handler):
+    def get(self):
+        return self.render("manage_comment_list.html")
+
+class api_get_comments(Handler):
+    def get(self):
+        total = Comment.count_all()
+        page_index=self.request.get("page",'1')
+        if page_index=="":
+            page_index=1
+        else:
+            page_index=int(page_index)
+        page = Page(total,page_index)
+        comments = Comment.find_by('order by created_at desc limit ?,?', page.offset, page.limit)
+        return self.write(get_json(dict(comments=comments, page=page)))
+
+
+
+class api_create_blog_comment_handler(Handler):
+    def post(self,blog_id):
+        user=self.user
+        if user is None:
+            raise APIPermissionError('Need signin.')
+        blog = Blog.get(blog_id)
+        if blog is None:
+            raise APIResourceNotFoundError('Blog')
+
+        # content = ctx.request.input(content='').content.strip()
+        content = self.request.get("content").strip()
+        if not content:
+            raise APIValueError('content')
+        c = Comment(blog_id=blog_id, user_id=user.id, user_name=user.name, user_image=user.image, content=content)
+        c.insert()
+        return self.write(get_json(dict(comment=c)))
+
+
+class peraonal_page_handler(Handler):
+    def get(self):
+        return self.render("personal_page.html")
+
 app = webapp2.WSGIApplication([
+    ('/?', MainPage),
     ('/blog/?', MainPage),
     ('/blog/newpost',Add_blog),
     ('/blog/([0-9a-zA-Z]+)',BlogPage),
     ('/signup/?',Signup_handler),
     ('/welcome/?',Welcome_handler),
-    ('/login/?',Login_handler),
+    ('/signin/?',Login_handler),
+    # ('/signout/?',signout_handler),
     ('/blog.json/([0-9a-zA-Z]+)',blog_json_handler),
     ('/blog.json/?', MainPage_json_handler),
     ('/hello/?', hello_world_handler),
-    # ('/logout/?',Logout_handler),
+    ('/signout/?',Logout_handler),
+
+    ('/manage/blogs',Manage_blogList_handler),
+    ('/api/blogs',api_get_blogs),
+    ('/api/blog/delete/([0-9a-zA-Z]+)',api_blog_delete),
+    ('/api/blog/([0-9a-zA-Z]+)',api_blog),
+    ('/manage/blogs/edit/([0-9a-zA-Z]+)',manage_blogs_edit_handler),
+
+    ('/manage/users',Manage_UserList_handler),
+    ('/api/users',api_get_users),
+
+    ('/manage/comments',Manage_CommentList_handler),
+    ('/api/comments',api_get_comments),
+
+    ('/api/blogs/([0-9a-zA-Z]+)/comments',api_create_blog_comment_handler),
+
+
+    ('/me',peraonal_page_handler),
+
 ], debug=True)
 
 application = sae.create_wsgi_app(app)
